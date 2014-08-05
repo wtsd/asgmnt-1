@@ -10,13 +10,13 @@ function doLaunch() {
         $(this).parents('.modal').hide();
     });
     $('nav a').on('click', function (e) {
-    	e.preventDefault();
+        e.preventDefault();
         var $item = $(this),
             href = $item.attr('href'),
             $modal = $('.modal'),
             values = '';
         if (href == '/signup') {
-        	$.ajax({
+            $.ajax({
                 data : {
                     'controller' : 'frmSignup',
                     'values' : values
@@ -29,7 +29,7 @@ function doLaunch() {
                 }
             });
         } else if (href == '/login') {
-        	$.ajax({
+            $.ajax({
                 data : {
                     'controller' : 'frmLogin',
                     'values' : values
@@ -41,8 +41,8 @@ function doLaunch() {
                     }
                 }
             });
-    	} else if (href == '/logout') {
-    		$.ajax({
+        } else if (href == '/logout') {
+            $.ajax({
                 data : {
                     'controller' : 'doLogout',
                     'values' : values
@@ -58,8 +58,8 @@ function doLaunch() {
                     }
                 }
             });
-		} else if (href == '/add') {
-			$.ajax({
+        } else if (href == '/add') {
+            $.ajax({
                 data : {
                     'controller' : 'frmOrder',
                     'values' : values
@@ -71,16 +71,18 @@ function doLaunch() {
                     }
                 }
             });
-		} else if (href == '/orders') {
-			console.log('Order list');
+        } else if (href == '/orders') {
+           lstOrdersStart();
         }
-	});
+    });
 
     frmOrderRoutine();
+    lstOrdersStart();
 }
 
+
 function signupRoutine() {
-	$('.frmSignup').on('submit', function (e) {
+    $('.frmSignup').on('submit', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -121,7 +123,7 @@ function signupRoutine() {
 }
 
 function loginRoutine() {
-	$('.frmLogin').on('submit', function (e) {
+    $('.frmLogin').on('submit', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -155,7 +157,7 @@ function loginRoutine() {
 }
 
 function frmOrderRoutine() {
-	$('.frmOrder').on('submit', function (e) {
+    $('.frmOrder').on('submit', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -185,10 +187,28 @@ function frmOrderRoutine() {
 }
 
 function lstOrdersStart() {
+    var values = {};
+    values.page = 1;
+    $.ajax({
+        data : {
+            'controller' : 'listOrders',
+            'values' : values
+        },
+        success : function (result) {
+            //
+            if (result.status == 'ok') {
+                var contents = '';
 
+                $.each(result.orders, function (index, value) {
+                    contents += '<tr><td>' + value.id + '</td><td>' + value.caption + '</td><td>' + value.descr + '</td><td>' + value.price + ' руб.</td><td><button data-id="' + value.id + '" class="exec">Выполнить</button></td></tr>';
+                });
+                $('#orders tbody').html(contents);
+                lstOrdersRoutine();
+            }
+        }
+    });
 }
 
 function lstOrdersRoutine() {
-
+    
 }
-

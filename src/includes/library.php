@@ -7,29 +7,34 @@ define('SQL_INSERT_SIGNUP', "INSERT INTO `tblSignup` SET `login` = '%s', `pass` 
 
 define('ORDER_DB', 0);
 define('SQL_INSERT_ORDER', "INSERT INTO `tblOrder` SET `caption` = '%s', `descr` = '%s', `price` = '%d', `uid` = %d, `status` = 1, `cdate` = Now()");
+define('SQL_LIST_ORDERS', "SELECT * FROM `tblOrder` WHERE `status` = 1 ORDER BY `cdate` LIMIT 1000");
 
 function doRouting()
 {
     global $lang;
     $title = $lang['title'];
+
     $isAuthorized = isAuthorized();
     $userName = getUsername();
     $role = getRole();
     $account = getAccount();
     $content = '';
 
-	if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (parseUrl(0) == 'ajax') {
-        	if (isAuthorized()) {
-        		if ($role == 'client') {
-        			$allowedControllers = array('frmOrder', 'saveOrder', 'myOrders', 'doLogout');
-        		} else {
-        			$allowedControllers = array('seizeOrder', 'listOrders', 'doLogout');
-        		}
-        	} else {
-				$allowedControllers = array('frmSignup', 'frmLogin', 'doAuthorize', 'doSignup');
-        	}
-        	if (in_array($_POST['controller'], $allowedControllers)) {
+            if (isAuthorized()) {
+                if ($role == 'client') {
+                    $clientControllers = array('frmOrder', 'saveOrder', 'myOrders', 'doLogout');
+                    $allowedControllers = $clientControllers;
+                } else {
+                    $executorControllers = array('seizeOrder', 'listOrders', 'doLogout');
+                    $allowedControllers = $executorControllers;
+                }
+            } else {
+                $notAuthorizedControllers = array('frmSignup', 'frmLogin', 'doAuthorize', 'doSignup');
+                $allowedControllers = $notAuthorizedControllers;
+            }
+            if (in_array($_POST['controller'], $allowedControllers)) {
                 $response = $_POST['controller']($_POST['values']);
                 die(json_encode($response));
             }
@@ -76,7 +81,7 @@ function connectDb($databaseId = 0)
 
 function selectDb($sql, $placeholders = null, $databaseId = 0)
 {
-	global $config;
+    global $config;
     connectDb($databaseId);
     
     if (is_array($placeholders)) {
@@ -101,7 +106,7 @@ function selectDb($sql, $placeholders = null, $databaseId = 0)
 
 function insertDb($sql, $placeholders = null, $databaseId = 0)
 {
-	global $config;
+    global $config;
     connectDb($databaseId);
 
     if (is_array($placeholders)) {
@@ -123,7 +128,7 @@ function insertDb($sql, $placeholders = null, $databaseId = 0)
 
 function updateDb($sql, $placeholders = null, $databaseId = 0)
 {
-	return insertDb($sql, $placeholders, $databaseId);
+    return insertDb($sql, $placeholders, $databaseId);
 }
 
 /* Cookies */
@@ -174,22 +179,25 @@ function getRole()
     return null;
 }
 
+
 function doSignup($values)
 {
     global $lang;
     // @todo: Validate input
 
     // Check, if user is unique
+    $sqlUnique = SQL_SIGNUP_BY_LOGIN;
     $placeholdersUnique = array($values['user']);
-    $resultUnique = selectDb(SQL_SIGNUP_BY_LOGIN, $placeholdersUnique, SIGNUP_DB);
+    $resultUnique = selectDb($sqlUnique, $placeholdersUnique, SIGNUP_DB);
 
     if ($resultUnique['count'] == 0) {
+        $sqlInsert = SQL_INSERT_SIGNUP;
         $hashedPass = hashPassword($values['pass']);
         $placeholdersInsert = array($values['user'], $hashedPass, $values['role']);
-        $newId = insertDb(SQL_INSERT_SIGNUP, $placeholdersInsert, SIGNUP_DB);
+        $newId = insertDb($sqlInsert, $placeholdersInsert, SIGNUP_DB);
 
         if ((int)$newId > 0) {
-        	setAuthorizedCookies($newId, $hashedPass);
+            setAuthorizedCookies($newId, $hashedPass);
 
             $result = array();
 
@@ -202,6 +210,7 @@ function doSignup($values)
                 $result['content'] = prepareTemplate('frm-order');
             } else {
                 $result['menu'] = prepareTemplate('menu-exec');
+                $result['content'] = prepareTemplate('lst-orders');
             }
             $result['menu'] = prepareTemplate('menu-exec');
             $result['html'] = $lang['reg_success'];
@@ -224,21 +233,21 @@ function doSignup($values)
         $result['status'] = 'error';
     }
     return $result;
-
 }
 
 function doAuthorize($values)
 {
-	global $lang;
+    global $lang;
 
+    $sql = SQL_SIGNUP_BY_LOGIN;
     $placeholders = array($values['user']);
-    $res = selectDb(SQL_SIGNUP_BY_LOGIN, $placeholders, SIGNUP_DB);
-
     $result = array();
+
+    $res = selectDb($sql, $placeholders, SIGNUP_DB);
     if ($res['count'] == 1) {
         $row = $res['rows'][0];
         if (validatePassword($values['pass'], $row['pass'])) {
-        	setAuthorizedCookies($row['id'], $row['pass']);
+            setAuthorizedCookies($row['id'], $row['pass']);
 
             $result['username'] = $row['login'];
             $result['role'] = $row['role'];
@@ -249,6 +258,7 @@ function doAuthorize($values)
                 $result['content'] = prepareTemplate('frm-order');
             } else {
                 $result['menu'] = prepareTemplate('menu-exec');
+                $result['content'] = prepareTemplate('lst-orders');
             }
             $result['html'] = $lang['msg_welcome'];
             $result['status'] = 'ok';
@@ -283,6 +293,7 @@ function doLogout($values)
     $result['status'] = 'ok';
 
     return $result;
+
 }
 
 function frmLogin()
@@ -315,10 +326,9 @@ function isAuthorized()
     return false;
 }
 
-
 function getAccount()
 {
-	$row = getCookieDecrypted();
+    $row = getCookieDecrypted();
     if (isset($row['account'])) {
         return $row['account'];
     }
@@ -366,9 +376,19 @@ function saveOrder($values)
 
 function listOrders($values)
 {
-	if (isAuthorized() && getRole() == 'executor') {
-
-	}
+    // @todo: Pagination
+    if (isAuthorized() && getRole() == 'executor') {
+        $sql = SQL_LIST_ORDERS;
+        $rows = selectDb($sql, null, ORDER_DB);
+        if ($rows['count'] > 0) {
+            $result = array();
+            $result['status'] = 'ok';
+            $result['orders'] = $rows['rows'];
+            $result['count'] = $rows['count'];
+            
+            return $result;
+        }
+    }
 }
 
 function seizeOrder($values)
