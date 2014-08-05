@@ -1,10 +1,13 @@
+/*jslint browser:true */
+/*global $, jQuery, console, CKEDITOR, alert, confirm */
 $.ajaxSetup({
-  url: '/ajax',
-  type : 'post',
-  dataType : 'json',
+    url: '/ajax',
+    type : 'post',
+    dataType : 'json'
 });
 
 function doLaunch() {
+    'use strict';
     $('.close').on('click', function (e) {
         e.preventDefault();
         $(this).parents('.modal').hide();
@@ -15,40 +18,40 @@ function doLaunch() {
             href = $item.attr('href'),
             $modal = $('.modal'),
             values = '';
-        if (href == '/signup') {
+        if (href === '/signup') {
             $.ajax({
                 data : {
                     'controller' : 'frmSignup',
                     'values' : values
                 },
                 success : function (result) {
-                    if (result.status == 'ok') {
+                    if (result.status === 'ok') {
                         $modal.show().find('.text').html(result.html);
                         signupRoutine();
                     }
                 }
             });
-        } else if (href == '/login') {
+        } else if (href === '/login') {
             $.ajax({
                 data : {
                     'controller' : 'frmLogin',
                     'values' : values
                 },
                 success : function (result) {
-                    if (result.status == 'ok') {
+                    if (result.status === 'ok') {
                         $modal.show().find('.text').html(result.html);
                         loginRoutine();
                     }
                 }
             });
-        } else if (href == '/logout') {
+        } else if (href === '/logout') {
             $.ajax({
                 data : {
                     'controller' : 'doLogout',
                     'values' : values
                 },
                 success : function (result) {
-                    if (result.status == 'ok') {
+                    if (result.status === 'ok') {
                         $modal.show().find('.text').html(result.html);
                         $('.role').html(' ');
                         $('.account').html(' ');
@@ -58,21 +61,21 @@ function doLaunch() {
                     }
                 }
             });
-        } else if (href == '/add') {
+        } else if (href === '/add') {
             $.ajax({
                 data : {
                     'controller' : 'frmOrder',
                     'values' : values
                 },
                 success : function (result) {
-                    if (result.status == 'ok') {
+                    if (result.status === 'ok') {
                         $('#content').html(result.html);
                         frmOrderRoutine();
                     }
                 }
             });
-        } else if (href == '/orders') {
-           lstOrdersStart();
+        } else if (href === '/orders') {
+            lstOrdersStart();
         }
     });
 
@@ -80,8 +83,8 @@ function doLaunch() {
     lstOrdersStart();
 }
 
-
 function signupRoutine() {
+    'use strict';
     $('.frmSignup').on('submit', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -90,7 +93,7 @@ function signupRoutine() {
             pass = $('.pass').val(),
             $modal = $('.modal'),
             role = $('.role option:checked').val(),
-            values = {"user": login, "pass": pass, "role":role};
+            values = {"user" : login, "pass" : pass, "role" : role};
 
 
         $.ajax({
@@ -103,9 +106,9 @@ function signupRoutine() {
             },
             success : function (result) {
 
-                if (result.status == 'ok') {
+                if (result.status === 'ok') {
                     $modal.find('.text').html(result.html);
-                    setTimeout(function () {$modal.hide();}, 1000);
+                    setTimeout(function () { $modal.hide(); }, 1000);
                     
                     $('.role').html(result.role_label + ': ' + result.username);
                     $('.account').html(result.account);
@@ -123,6 +126,7 @@ function signupRoutine() {
 }
 
 function loginRoutine() {
+    'use strict';
     $('.frmLogin').on('submit', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -143,7 +147,7 @@ function loginRoutine() {
             },
             success : function (result) {
                 $modal.find('.text').html(result.html);
-                setTimeout(function () {$modal.hide();}, 1000);
+                setTimeout(function () { $modal.hide(); }, 1000);
 
                 $('.role').html(result.role_label + ': ' + result.username);
                 $('.account').html(result.account);
@@ -157,6 +161,7 @@ function loginRoutine() {
 }
 
 function frmOrderRoutine() {
+    'use strict';
     $('.frmOrder').on('submit', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -164,7 +169,7 @@ function frmOrderRoutine() {
         var caption = $('.caption').val(),
             descr = $('.descr').val(),
             price = $('.price').val(),
-            values = {"caption": caption, "descr": descr, "price": price}
+            values = {"caption": caption, "descr": descr, "price": price},
             $modal = $('.modal');
 
 
@@ -177,7 +182,7 @@ function frmOrderRoutine() {
                 // @todo: Freeze form
             },
             success : function (result) {
-                if (result.status == 'ok') {
+                if (result.status === 'ok') {
                     $('#content').html(result.msg);
                 }
             }
@@ -187,6 +192,7 @@ function frmOrderRoutine() {
 }
 
 function lstOrdersStart() {
+    'use strict';
     var values = {};
     values.page = 1;
     $.ajax({
@@ -196,7 +202,7 @@ function lstOrdersStart() {
         },
         success : function (result) {
             //
-            if (result.status == 'ok') {
+            if (result.status === 'ok') {
                 var contents = '';
 
                 $.each(result.orders, function (index, value) {
@@ -204,7 +210,7 @@ function lstOrdersStart() {
                 });
                 $('#orders tbody').html(contents);
                 lstOrdersRoutine();
-            } else if (result.status == 'void') {
+            } else if (result.status === 'void') {
                 $('#orders').hide().after('<p>' + result.msg + '</p>');
             }
         }
@@ -212,7 +218,9 @@ function lstOrdersStart() {
 }
 
 function lstOrdersRoutine() {
+    'use strict';
     $('.exec').on('click', function (e) {
+        e.preventDefault();
         var $btn = $(this),
             $tr = $(this).parents('tr'),
             values = {};
@@ -227,7 +235,7 @@ function lstOrdersRoutine() {
             success : function (result) {
                 //
                 console.log(result);
-                if (result.status == 'ok') {
+                if (result.status === 'ok') {
                     $('.account').html(result.account);
                 }
             }
