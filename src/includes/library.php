@@ -5,6 +5,9 @@ define('SQL_SIGNUP_BY_ID', "SELECT * FROM `tblSignup` WHERE `id` = %d LIMIT 1");
 define('SQL_SIGNUP_BY_LOGIN', "SELECT * FROM `tblSignup` WHERE `login` = '%s' LIMIT 1");
 define('SQL_INSERT_SIGNUP', "INSERT INTO `tblSignup` SET `login` = '%s', `pass` = '%s', `role` = '%s'");
 
+define('ORDER_DB', 0);
+define('SQL_INSERT_ORDER', "INSERT INTO `tblOrder` SET `caption` = '%s', `descr` = '%s', `price` = '%d', `uid` = %d, `status` = 1, `cdate` = Now()");
+
 function doRouting()
 {
     global $lang;
@@ -196,6 +199,7 @@ function doSignup($values)
             $result['account'] = '0.0';
             if ($result['role'] == 'client') {
                 $result['menu'] = prepareTemplate('menu-client');
+                $result['content'] = prepareTemplate('frm-order');
             } else {
                 $result['menu'] = prepareTemplate('menu-exec');
             }
@@ -242,6 +246,7 @@ function doAuthorize($values)
             $result['account'] = $row['account'];
             if ($row['role'] == 'client') {
                 $result['menu'] = prepareTemplate('menu-client');
+                $result['content'] = prepareTemplate('frm-order');
             } else {
                 $result['menu'] = prepareTemplate('menu-exec');
             }
@@ -313,7 +318,12 @@ function isAuthorized()
 
 function getAccount()
 {
-	return '0.0';
+	$row = getCookieDecrypted();
+    if (isset($row['account'])) {
+        return $row['account'];
+    }
+
+    return '';
 }
 
 function addAccount($executorId, $sum)
@@ -324,15 +334,34 @@ function addAccount($executorId, $sum)
 function frmOrder()
 {
 	if (isAuthorized() && getRole() == 'client') {
-
+		$result = array();
+        $result['html'] = prepareTemplate('frm-order');
+        $result['status'] = 'ok';
+        return $result;
 	}
 }
 
 function saveOrder($values)
 {
-	if (isAuthorized() && getRole() == 'client') {
+	global $lang;
+    if (isAuthorized() && getRole() == 'client') {
+        $row = getCookieDecrypted();
+        if (isset($row['id'])) {
+            $uid = $row['id'];
+        }
 
-	}
+        $sqlInsert = SQL_INSERT_ORDER;
+        $placeholdersInsert = array(htmlspecialchars($values['caption'], ENT_QUOTES, 'utf-8'), htmlspecialchars($values['descr'], ENT_QUOTES, 'utf-8'), $values['price'], $uid);
+        $newId = insertDb($sqlInsert, $placeholdersInsert, ORDER_DB);
+        if ($newId > 0) {
+            $result = array();
+            $result['status'] = 'ok';
+            $result['id'] = $newId;
+            $result['msg'] = sprintf($lang['order_saved'], $newId);
+
+            return $result;
+        }
+    }
 }
 
 function listOrders($values)

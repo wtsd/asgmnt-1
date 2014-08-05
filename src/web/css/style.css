@@ -1,8 +1,12 @@
 @import "reset.css";
 
+@import url(http://fonts.googleapis.com/css?family=Play&subset=latin,cyrillic);
+
 body {
+    font-family: 'Play', sans-serif;
     color: #606060;
     background: #f3f3f3;
+    font-size: 12px;
 }
 
 a {
@@ -22,6 +26,9 @@ footer {
     margin: 10px auto;
     background: rgba(255, 255, 255, .9);
     border-radius: 10px;
+    -moz-box-shadow:    3px 3px 10px 1px #808080;
+    -webkit-box-shadow: 3px 3px 10px 1px #808080;
+    box-shadow:         3px 3px 10px 1px #808080;
 }
 
 header {
@@ -132,4 +139,9 @@ input {
 textarea:active,
 input:active {
     border: 1px solid #d0d0ff;
+}
+
+h2 {
+    font-size: 1.5em;
+    color: #CC4032;
 }

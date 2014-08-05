@@ -59,11 +59,24 @@ function doLaunch() {
                 }
             });
 		} else if (href == '/add') {
-			console.log('New order form');
+			$.ajax({
+                data : {
+                    'controller' : 'frmOrder',
+                    'values' : values
+                },
+                success : function (result) {
+                    if (result.status == 'ok') {
+                        $('#content').html(result.html);
+                        frmOrderRoutine();
+                    }
+                }
+            });
 		} else if (href == '/orders') {
 			console.log('Order list');
         }
 	});
+
+    frmOrderRoutine();
 }
 
 function signupRoutine() {
@@ -142,7 +155,33 @@ function loginRoutine() {
 }
 
 function frmOrderRoutine() {
+	$('.frmOrder').on('submit', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
 
+        var caption = $('.caption').val(),
+            descr = $('.descr').val(),
+            price = $('.price').val(),
+            values = {"caption": caption, "descr": descr, "price": price}
+            $modal = $('.modal');
+
+
+        $.ajax({
+            data : {
+                'controller' : 'saveOrder',
+                'values' : values
+            },
+            beforeSend: function () {
+                // @todo: Freeze form
+            },
+            success : function (result) {
+                if (result.status == 'ok') {
+                    $('#content').html(result.msg);
+                }
+            }
+        });
+        return false;
+    });
 }
 
 function lstOrdersStart() {
