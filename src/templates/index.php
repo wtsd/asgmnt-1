@@ -40,9 +40,9 @@
     <div class="right-block">
         <div class="role">
             <?php if ($role == 'client') { ?>
-            Заказчик <?=$userName?>
+            Заказчик: <?=$userName?>
             <?php } elseif ($role == 'executor') { ?>
-            Исполнитель <?=$userName?>
+            Исполнитель: <?=$userName?>
             <?php } ?>
 
         </div>
@@ -52,6 +52,13 @@
 </header>
 
 <section id="content">
+    <?php
+        if ($role == 'client') { 
+            // Order form
+        } elseif ($role == 'executor') {
+            // Order list
+        }
+    ?>
     <?php if (!$isAuthorized) { ?>
     Для продолжения работы, авторизуйтесь, пожалуйста.
     <?php } ?>

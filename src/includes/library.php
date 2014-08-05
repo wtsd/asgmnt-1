@@ -1,5 +1,10 @@
 <?php
 
+define('SIGNUP_DB', 0);
+define('SQL_SIGNUP_BY_ID', "SELECT * FROM `tblSignup` WHERE `id` = %d LIMIT 1");
+define('SQL_SIGNUP_BY_LOGIN', "SELECT * FROM `tblSignup` WHERE `login` = '%s' LIMIT 1");
+define('SQL_INSERT_SIGNUP', "INSERT INTO `tblSignup` SET `login` = '%s', `pass` = '%s', `role` = '%s'");
+
 function doRouting()
 {
     global $lang;
@@ -124,6 +129,12 @@ function setCookies($key, $value)
     setcookie($key, $value, time() + 3600);
 }
 
+function setAuthorizedCookies($uid, $pass)
+{
+    setCookies('uid', base64_encode($uid));
+    setCookies('token', base64_encode(substr($pass, ($uid % 10))));   
+}
+
 function getCookies($key)
 {
     if (isset($_COOKIE[$key])) {
@@ -133,22 +144,140 @@ function getCookies($key)
     }
 }
 
+function getCookieDecrypted()
+{
+    $uid = base64_decode(getCookies('uid'));
+    $token = base64_decode(getCookies('token'));
+
+    $sql = SQL_SIGNUP_BY_ID;
+    $placeholders = array($uid);
+    $rows = selectDb($sql, $placeholders, SIGNUP_DB);
+    if ($rows['count'] == 1) {
+        if (substr($rows['rows'][0]['pass'], ($rows['rows'][0]['id'] % 10)) == $token) {
+            return $rows['rows'][0];
+        }
+    }
+}
+
+
 /* Account management */
 function getRole()
 {
-	return '';
+    $row = getCookieDecrypted();
+    if (isset($row['role'])) {
+        return $row['role'];
+    }
+
+    return null;
 }
 
 function doSignup($values)
 {
+    global $lang;
+    // @todo: Validate input
+
+    // Check, if user is unique
+    $placeholdersUnique = array($values['user']);
+    $resultUnique = selectDb(SQL_SIGNUP_BY_LOGIN, $placeholdersUnique, SIGNUP_DB);
+
+    if ($resultUnique['count'] == 0) {
+        $hashedPass = hashPassword($values['pass']);
+        $placeholdersInsert = array($values['user'], $hashedPass, $values['role']);
+        $newId = insertDb(SQL_INSERT_SIGNUP, $placeholdersInsert, SIGNUP_DB);
+
+        if ((int)$newId > 0) {
+        	setAuthorizedCookies($newId, $hashedPass);
+
+            $result = array();
+
+            $result['username'] = $values['user'];
+            $result['role'] = $values['role'];
+            $result['role_label'] = $lang['groups'][$values['role']];
+            $result['account'] = '0.0';
+            if ($result['role'] == 'client') {
+                $result['menu'] = prepareTemplate('menu-client');
+            } else {
+                $result['menu'] = prepareTemplate('menu-exec');
+            }
+            $result['menu'] = prepareTemplate('menu-exec');
+            $result['html'] = $lang['reg_success'];
+            $result['status'] = 'ok';
+
+        } else {
+            $result['username'] = '';
+            $result['role'] = '';
+            $result['account'] = '';
+            $result['menu'] = prepareTemplate('menu-unauth');
+            $result['html'] = $lang['reg_err'];
+            $result['status'] = 'error';
+        }
+    } else {
+        $result['username'] = '';
+        $result['role'] = '';
+        $result['account'] = '';
+        $result['menu'] = prepareTemplate('menu-unauth');
+        $result['html'] = $lang['reg_taken'];
+        $result['status'] = 'error';
+    }
+    return $result;
+
 }
 
 function doAuthorize($values)
 {
+	global $lang;
+
+    $placeholders = array($values['user']);
+    $res = selectDb(SQL_SIGNUP_BY_LOGIN, $placeholders, SIGNUP_DB);
+
+    $result = array();
+    if ($res['count'] == 1) {
+        $row = $res['rows'][0];
+        if (validatePassword($values['pass'], $row['pass'])) {
+        	setAuthorizedCookies($row['id'], $row['pass']);
+
+            $result['username'] = $row['login'];
+            $result['role'] = $row['role'];
+            $result['role_label'] = $lang['groups'][$row['role']];
+            $result['account'] = $row['account'];
+            if ($row['role'] == 'client') {
+                $result['menu'] = prepareTemplate('menu-client');
+            } else {
+                $result['menu'] = prepareTemplate('menu-exec');
+            }
+            $result['html'] = $lang['msg_welcome'];
+            $result['status'] = 'ok';
+        } else {
+            $result['username'] = '';
+            $result['role'] = '';
+            $result['account'] = '';
+            $result['menu'] = prepareTemplate('menu-unauth');
+            $result['html'] = $lang['msg_err'];
+            $result['status'] = 'error';
+        }
+    }
+
+    return $result;
 }
 
 function doLogout($values)
 {
+    global $lang;
+
+    setCookies('uid', 0);
+    setCookies('token', '');
+    unset($_COOKIE);
+    // @todo: Return anonymous values
+    $result = array();
+
+    $result['username'] = '';
+    $result['role'] = '';
+    $result['account'] = '';
+    $result['menu'] = prepareTemplate('menu-unauth');
+    $result['html'] = $lang['msg_logout'];
+    $result['status'] = 'ok';
+
+    return $result;
 }
 
 function frmLogin()
@@ -163,12 +292,22 @@ function frmSignup()
 
 function getUsername()
 {
-	return 'Saul Goodman';
+    $row = getCookieDecrypted();
+    if (isset($row['role'])) {
+        return $row['login'];
+    }
+
+    return null;
 }
 
 function isAuthorized()
 {
-	return false;
+    $row = getCookieDecrypted();
+    if (isset($row['id'])) {
+        return true;
+    }
+
+    return false;
 }
 
 

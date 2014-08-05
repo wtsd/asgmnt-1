@@ -8,7 +8,7 @@ define('DS', DIRECTORY_SEPARATOR);
 
 require(ROOT . DS . 'includes' . DS . 'language.php');
 if ((@include ROOT . DS . 'config' . DS . 'main.php') != 1) {
-    die('Для корректной работы требуется установка файла конфигурации config/main.php по шаблону config/main.php.dist');
+    die($lang['err_noconfig']);
 }
-
+require(ROOT . DS . 'includes' . DS . 'encryption.php');
 require(ROOT . DS . 'includes' . DS . 'library.php');
