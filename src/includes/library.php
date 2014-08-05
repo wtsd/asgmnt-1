@@ -10,6 +10,21 @@ function doRouting()
     $account = getAccount();
     $content = '';
 
+	if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        if (parseUrl(0) == 'ajax') {
+        	if (isAuthorized()) {
+        		if ($role == 'client') {
+
+        		} else {
+
+        		}
+        	} else {
+
+        	}
+
+        }
+    }
+
     include(ROOT . DS . 'templates' . DS . 'index.php');
 }
 
@@ -50,14 +65,54 @@ function connectDb($databaseId = 0)
 
 function selectDb($sql, $placeholders = null, $databaseId = 0)
 {
+	global $config;
+    connectDb($databaseId);
+    
+    if (is_array($placeholders)) {
+        for ($i = 0; $i < count($placeholders); $i++) {
+            $placeholders[$i] = mysqli_real_escape_string($config['db'][$databaseId]['handler'], $placeholders[$i]);
+        }
+        $preparedSql = vsprintf($sql, $placeholders);
+    } else {
+        $preparedSql = $sql;
+    }
+
+    $resource = mysqli_query($config['db'][$databaseId]['handler'], $preparedSql);
+    $result = array('rows' => array(), 'count' => 0);
+    if ($resource) {
+        while ($row = mysqli_fetch_assoc($resource)) {
+            $result['rows'][] = $row;
+            $result['count']++;
+        }
+    }
+    return $result;
 }
 
 function insertDb($sql, $placeholders = null, $databaseId = 0)
 {
+	global $config;
+    connectDb($databaseId);
+
+    if (is_array($placeholders)) {
+        for ($i = 0; $i < count($placeholders); $i++) {
+            $placeholders[$i] = mysqli_real_escape_string($config['db'][$databaseId]['handler'], $placeholders[$i]);
+        }
+        $preparedSql = vsprintf($sql, $placeholders);
+    } else {
+        $preparedSql = $sql;
+    }
+
+    $resource = mysqli_multi_query($config['db'][$databaseId]['handler'], $preparedSql);
+    if ($resource) {
+        return mysqli_insert_id($config['db'][$databaseId]['handler']);
+    } else {
+        return 0;
+    }
 }
 
 function updateDb($sql, $placeholders = null, $databaseId = 0)
 {
+	return insertDb($sql, $placeholders, $databaseId);
 }
 
 /* Cookies */
@@ -78,7 +133,7 @@ function getCookies($key)
 /* Account management */
 function getRole()
 {
-	return 'client';
+	return '';
 }
 
 function doSignup($values)
@@ -124,18 +179,30 @@ function addAccount($executorId, $sum)
 /* Order management */
 function frmOrder()
 {
+	if (isAuthorized() && getRole() == 'client') {
+
+	}
 }
 
 function saveOrder($values)
 {
+	if (isAuthorized() && getRole() == 'client') {
+
+	}
 }
 
 function listOrders($values)
 {
+	if (isAuthorized() && getRole() == 'executor') {
+
+	}
 }
 
 function seizeOrder($values)
 {
+	if (isAuthorized() && getRole() == 'executor') {
+
+	}
 }
 
 function getOrderInfo($id)
@@ -144,6 +211,9 @@ function getOrderInfo($id)
 
 function countComission($price)
 {
+	global $config;
+
+    return $price * ($config['comission'] / 100);
 }
 
 function saveComission($amount, $order_id, $user_id)

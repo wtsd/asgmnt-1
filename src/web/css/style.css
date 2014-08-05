@@ -1,1 +1,59 @@
 @import "reset.css";
+
+body {
+}
+
+header,
+section,
+footer {
+    padding: 10px;
+    width: 900px;
+    margin: 10px auto;
+}
+
+header {
+    height: 60px;
+    display: block;
+    overflow: auto;
+}
+header nav {}
+header nav ul {
+    list-style-type: none;
+}
+header nav ul li {
+    float: left;
+    padding: 20px;
+}
+
+header .logo {
+    float: left;
+    display: block;
+    width: 100px;
+    height: 40px;
+}
+header .right-block {
+    float: right;
+}
+header .right-block .role {}
+header .right-block .account {}
+
+section#content {
+    min-height: 300px;
+}
+
+footer {
+    text-align: right;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 20%;
+    left: 50%;
+}
+.modal .close {
+    position: absolute;
+    right: 10px;
+    top: 5px;
+}
+
