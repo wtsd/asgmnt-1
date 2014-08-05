@@ -14,14 +14,17 @@ function doRouting()
         if (parseUrl(0) == 'ajax') {
         	if (isAuthorized()) {
         		if ($role == 'client') {
-
+        			$allowedControllers = array('frmOrder', 'saveOrder', 'myOrders', 'doLogout');
         		} else {
-
+        			$allowedControllers = array('seizeOrder', 'listOrders', 'doLogout');
         		}
         	} else {
-
+				$allowedControllers = array('frmSignup', 'frmLogin', 'doAuthorize', 'doSignup');
         	}
-
+        	if (in_array($_POST['controller'], $allowedControllers)) {
+                $response = $_POST['controller']($_POST['values']);
+                die(json_encode($response));
+            }
         }
     }
 
@@ -150,10 +153,12 @@ function doLogout($values)
 
 function frmLogin()
 {
+    return array('status' => 'ok', 'html' => prepareTemplate('login'));
 }
 
 function frmSignup()
 {
+    return array('status' => 'ok', 'html' => prepareTemplate('signup'));
 }
 
 function getUsername()
