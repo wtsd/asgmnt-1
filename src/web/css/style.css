@@ -21,6 +21,7 @@ a:hover {
 header,
 section,
 footer {
+
     padding: 10px;
     width: 900px;
     margin: 10px auto;
@@ -36,7 +37,6 @@ header {
     display: block;
     overflow: auto;
 }
-header nav {}
 header nav ul {
     list-style-type: none;
 }
@@ -54,10 +54,8 @@ header .logo {
 header .right-block {
     float: right;
 }
-header .right-block .role {}
-header .right-block .account {}
 
-section#content {
+section {
     min-height: 300px;
 }
 
