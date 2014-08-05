@@ -4,6 +4,11 @@ function doRouting()
 {
     global $lang;
     $title = $lang['title'];
+    $isAuthorized = isAuthorized();
+    $userName = getUsername();
+    $role = getRole();
+    $account = getAccount();
+    $content = '';
 
     include(ROOT . DS . 'templates' . DS . 'index.php');
 }
@@ -73,6 +78,7 @@ function getCookies($key)
 /* Account management */
 function getRole()
 {
+	return 'client';
 }
 
 function doSignup($values)
@@ -97,15 +103,18 @@ function frmSignup()
 
 function getUsername()
 {
+	return 'Saul Goodman';
 }
 
 function isAuthorized()
 {
+	return false;
 }
 
 
 function getAccount()
 {
+	return '0.0';
 }
 
 function addAccount($executorId, $sum)

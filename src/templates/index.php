@@ -26,18 +26,36 @@
     <div class="logo"></div>
     <nav>
         <ul>
-
+            <?php
+                if ($role == 'client') { 
+                    include(ROOT . DS . 'templates' . DS . 'menu-client.php'); 
+                } elseif ($role == 'executor') {
+                    include(ROOT . DS . 'templates' . DS . 'menu-exec.php'); 
+                } else {
+                    include(ROOT . DS . 'templates' . DS . 'menu-unauth.php'); 
+                }
+            ?>
         </ul>
     </nav>
     <div class="right-block">
-        <div class="role"></div>
+        <div class="role">
+            <?php if ($role == 'client') { ?>
+            Заказчик <?=$userName?>
+            <?php } elseif ($role == 'executor') { ?>
+            Исполнитель <?=$userName?>
+            <?php } ?>
+
+        </div>
         <div class="accCaption">Счёт</div>
-        <div class="account"></div>
+        <div class="account"><?=$account?></div>
     </div>
 </header>
 
 <section id="content">
-    
+    <?php if (!$isAuthorized) { ?>
+    Для продолжения работы, авторизуйтесь, пожалуйста.
+    <?php } ?>
+    <?=$content?>
 </section>
 
 <footer>
