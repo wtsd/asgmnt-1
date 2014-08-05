@@ -417,12 +417,11 @@ function seizeOrder($values)
 
         if ($order['status'] == 1 && $order['exec_id'] == 0) {
             // @todo: Check order status: if 0 and no executor, change its status
-            $sql = SQL_SEIZE_ORDER;
             $placeholders = array($row['id'], intval($order_id));
-            updateDb($sql, $placeholders, ORDER_DB);
+            updateDb(SQL_SEIZE_ORDER, $placeholders, ORDER_DB);
 
             $comission = countComission($order['price']);
-            saveComission($comission);
+            saveComission($comission, $order['id'], $row['id']);
             
             addAccount($row['id'], $order['price'] - $comission);
 
