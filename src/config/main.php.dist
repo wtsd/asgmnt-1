@@ -1,0 +1,11 @@
+<?php
+
+$config = array();
+
+$config['db'][0]['host'] = '127.0.0.1';
+$config['db'][0]['user'] = 'root';
+$config['db'][0]['pass'] = '';
+$config['db'][0]['dbname'] = 'db_asgnm_1';
+$config['db'][0]['handler'] = null;
+
+$config['comission'] = 3;
