@@ -204,11 +204,38 @@ function lstOrdersStart() {
                 });
                 $('#orders tbody').html(contents);
                 lstOrdersRoutine();
+            } else if (result.status == 'void') {
+                $('#orders').hide().after('<p>' + result.msg + '</p>');
             }
         }
     });
 }
 
 function lstOrdersRoutine() {
-    
+    $('.exec').on('click', function (e) {
+        var $btn = $(this),
+            $tr = $(this).parents('tr'),
+            values = {};
+
+        values.order_id = $btn.attr('data-id');
+
+        $.ajax({
+            data : {
+                'controller' : 'seizeOrder',
+                'values' : values
+            },
+            success : function (result) {
+                //
+                console.log(result);
+                if (result.status == 'ok') {
+                    $('.account').html(result.account);
+                }
+            }
+        });
+
+        // @todo: Send request for execution
+        console.log($tr);
+        $tr.hide();
+        //alert($(this).attr('data-id'));
+    });
 }

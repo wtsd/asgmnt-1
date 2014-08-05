@@ -4,11 +4,19 @@ define('SIGNUP_DB', 0);
 define('SQL_SIGNUP_BY_ID', "SELECT * FROM `tblSignup` WHERE `id` = %d LIMIT 1");
 define('SQL_SIGNUP_BY_LOGIN', "SELECT * FROM `tblSignup` WHERE `login` = '%s' LIMIT 1");
 define('SQL_INSERT_SIGNUP', "INSERT INTO `tblSignup` SET `login` = '%s', `pass` = '%s', `role` = '%s'");
+define('SQL_ADD_ACCOUNT', "UPDATE `tblSignup` SET `account` = `account` + %f WHERE `id` = %d LIMIT 1");
 
 define('ORDER_DB', 0);
 define('SQL_INSERT_ORDER', "INSERT INTO `tblOrder` SET `caption` = '%s', `descr` = '%s', `price` = '%d', `uid` = %d, `status` = 1, `cdate` = Now()");
 define('SQL_LIST_ORDERS', "SELECT * FROM `tblOrder` WHERE `status` = 1 ORDER BY `cdate` LIMIT 1000");
+define('SQL_SEIZE_ORDER', "UPDATE `tblOrder` SET `status` = 2, `exec_id` = %d WHERE `id` = %d");
+define('SQL_ORDER_INFO', "SELECT * FROM `tblOrder` WHERE `id` = %d LIMIT 1");
 
+define('COMISSION_DB', 0);
+define('SQL_INSERT_COMISSION', "INSERT INTO `tblComission` SET `order_id` = %d, `amount` = %f, `user_id` = %d, `cdate` = Now()");
+
+
+/* Basic routing */
 function doRouting()
 {
     global $lang;
@@ -233,6 +241,8 @@ function doSignup($values)
         $result['status'] = 'error';
     }
     return $result;
+
+
 }
 
 function doAuthorize($values)
@@ -338,22 +348,25 @@ function getAccount()
 
 function addAccount($executorId, $sum)
 {
+    $sql = SQL_ADD_ACCOUNT;
+    $placeholders = array($sum, $executorId);
+    updateDb($sql, $placeholders, SIGNUP_DB);
 }
 
 /* Order management */
 function frmOrder()
 {
-	if (isAuthorized() && getRole() == 'client') {
-		$result = array();
+    if (isAuthorized() && getRole() == 'client') {
+        $result = array();
         $result['html'] = prepareTemplate('frm-order');
         $result['status'] = 'ok';
         return $result;
-	}
+    }
 }
 
 function saveOrder($values)
 {
-	global $lang;
+    global $lang;
     if (isAuthorized() && getRole() == 'client') {
         $row = getCookieDecrypted();
         if (isset($row['id'])) {
@@ -376,6 +389,7 @@ function saveOrder($values)
 
 function listOrders($values)
 {
+    global $lang;
     // @todo: Pagination
     if (isAuthorized() && getRole() == 'executor') {
         $sql = SQL_LIST_ORDERS;
@@ -386,30 +400,68 @@ function listOrders($values)
             $result['orders'] = $rows['rows'];
             $result['count'] = $rows['count'];
             
-            return $result;
+        } else {
+            $result['msg'] = $lang['no_orders'];
+            $result['status'] = 'void';
         }
+        return $result;
     }
 }
 
 function seizeOrder($values)
 {
-	if (isAuthorized() && getRole() == 'executor') {
+    if (isAuthorized() && getRole() == 'executor') {
+        $order_id = $values['order_id'];
+        $order = getOrderInfo($order_id);
+        $row = getCookieDecrypted();
 
-	}
+        if ($order['status'] == 1 && $order['exec_id'] == 0) {
+            // @todo: Check order status: if 0 and no executor, change its status
+            $sql = SQL_SEIZE_ORDER;
+            $placeholders = array($row['id'], intval($order_id));
+            updateDb($sql, $placeholders, ORDER_DB);
+
+            $comission = countComission($order['price']);
+            saveComission($comission);
+            
+            addAccount($row['id'], $order['price'] - $comission);
+
+            $row = getCookieDecrypted();
+            $result = array();
+            $result['account'] = $row['account'];
+            $result['status'] = 'ok';
+            return $result;
+        
+        } else {
+            // This order was already taken
+        }
+    }
 }
+
 
 function getOrderInfo($id)
 {
+    $sql = SQL_ORDER_INFO;
+    $placeholders = array(intval($id));
+    $rows = selectDb($sql, $placeholders, ORDER_DB);
+    if ($rows['count'] == 1) {
+        return $rows['rows'][0];
+    } else {
+        return null;
+    }
 }
 
 function countComission($price)
 {
-	global $config;
+    global $config;
 
     return $price * ($config['comission'] / 100);
 }
 
 function saveComission($amount, $order_id, $user_id)
 {
+    $sql = SQL_INSERT_COMISSION;
+    $placeholders = array($order_id, $amount, $user_id);
+    insertDb($sql, $placeholders, COMISSION_DB);
 }
 

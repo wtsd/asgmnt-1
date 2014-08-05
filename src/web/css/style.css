@@ -145,3 +145,20 @@ h2 {
     font-size: 1.5em;
     color: #CC4032;
 }
+
+table {
+    margin: 20px auto;
+    width: 800px;
+}
+table th {
+    font-weight: bold;
+}
+table td {
+    border-bottom: 1px solid #d0d0d0;
+}
+table tr:last-of-type td {
+    border: 0;
+}
+table tr:hover td{
+    background: #dadada;
+}

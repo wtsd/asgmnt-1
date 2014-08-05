@@ -43,8 +43,8 @@
             Заказчик: <?=$userName?>
             <?php } elseif ($role == 'executor') { ?>
             Исполнитель: <?=$userName?>
+            
             <?php } ?>
-
         </div>
         <div class="accCaption">Счёт</div>
         <div class="account"><?=$account?></div>
@@ -54,9 +54,9 @@
 <section id="content">
     <?php
         if ($role == 'client') { 
-            // Order form
+            include(ROOT . DS . 'templates' . DS . 'frm-order.php'); 
         } elseif ($role == 'executor') {
-            // Order list
+            include(ROOT . DS . 'templates' . DS . 'lst-orders.php'); 
         }
     ?>
     <?php if (!$isAuthorized) { ?>
