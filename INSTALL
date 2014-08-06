@@ -1,0 +1,10 @@
+УСТАНОВКА
+
+Для установки нужно:
+1. Скачать из репозитория исходный код:
+
+    git clone https://github.com/wtsd/asgmnt-1.git
+
+2. Развернуть из файла db/db_struct.sql базу данных.
+
+3. Скопировать файл config/main.php.dist в config/main.php и указать реквизиты базы данных.
