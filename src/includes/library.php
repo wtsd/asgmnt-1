@@ -1,5 +1,25 @@
 <?php
 
+/**
+ * library.php — файл со всеми необходимыми для работы функциями,
+ * используемый для работы всей системы.
+ *
+ * Для корректной работы приложения необходимо расширение mysqli.
+ *
+ * @package Assignment1
+ * @author Vlad Gafurov <warlockfx@gmail.com>
+ * @version 0.1
+ *
+ */
+
+/**
+ * Объявление всех запросов и указание базы данных, в которых нужно 
+ * выполнять эти запросы.
+ * 
+ * Об этом было отдельно сказано в задании: «предусмотреть вариант,
+ * когда каждая таблица располагается в отдельной базе данных».
+ *
+ */
 define('SIGNUP_DB', 0);
 define('SQL_SIGNUP_BY_ID', "SELECT * FROM `tblSignup` WHERE `id` = %d LIMIT 1");
 define('SQL_SIGNUP_BY_LOGIN', "SELECT * FROM `tblSignup` WHERE `login` = '%s' LIMIT 1");
@@ -16,7 +36,19 @@ define('COMISSION_DB', 0);
 define('SQL_INSERT_COMISSION', "INSERT INTO `tblComission` SET `order_id` = %d, `amount` = %f, `user_id` = %d, `cdate` = Now()");
 
 
-/* Basic routing */
+/**
+ * Контроллер приложения
+ *
+ * Проверяет пользовательский ввод и ссылки, проверяет разрешения
+ * и запускает соответствующие функции.
+ *
+ * Существует три вида пользователей: анонимы, заказчики и 
+ * исполнители. Для каждого вида пользователей разрешены свои
+ * функции, которые вызываются через ajax-запрос методом post.
+ *
+ * По умолчанию запускается общий шаблон index.php.
+ *
+ */
 function doRouting()
 {
     global $lang;
@@ -52,6 +84,17 @@ function doRouting()
     include(ROOT . DS . 'templates' . DS . 'index.php');
 }
 
+/**
+ * Парсер ссылки
+ *
+ * Для того, чтобы можно было позже добавить вариант приложения без
+ * ajax`а, удобно будет заходить по прямой ссылке. Ссылка разбивается
+ * по символу «/» и возвращается запрошенная её часть.
+ *
+ * @param int $index    Номер переменной, которую нужно вернуть.
+ *
+ * @return string|null  Запрошенная часть ссылки.
+ */
 function parseUrl($index)
 {
     $url = $_SERVER['REQUEST_URI'];
@@ -64,16 +107,39 @@ function parseUrl($index)
     }
 }
 
+/**
+ * Подготовка шаблона к выводу
+ * 
+ * Подгрузка файла шаблона и передача ему свойств из массива
+ * $values. Вместо немедленного вывода, осуществляется буферизация
+ * и присвоение вывода переменной для более удобной работы.
+ *
+ * @param string $tpl           Название файла с шаблоном.
+ * @param array|null $values    Аргументы для шаблона
+ *
+ * @return string               Финальный вариант шаблона с данными.
+ */
 function prepareTemplate($tpl, $values = null)
 {
     ob_start();
     include(ROOT . DS . 'templates' . DS . $tpl . '.php');
     $result = ob_get_contents();
     ob_end_clean();
+
     return $result;
 }
 
-/* Database */
+/* База данных */
+
+/**
+ * Подключение к базе данных
+ *
+ * В силу того, что по заданию, баз данных может быть сколь угодно много,
+ * реквизиты для подключения к ним хранятся в конфигурационном файле,
+ * а подключение может осуществляться к любой из этих баз.
+ *
+ * @param int $databaseId   Номер базы данных, к которой нужно подключиться.
+ */
 function connectDb($databaseId = 0)
 {
     global $config, $lang;
@@ -87,6 +153,21 @@ function connectDb($databaseId = 0)
     }
 }
 
+/**
+ * Запрос на выборку из базы данных
+ *
+ * В целях безопасности, написаны отдельные функции для каждого вида
+ * запросов. К тому же, раз невозможно использовать ООП, пришлось
+ * отказаться от PDO в пользу mysqli и использовать вместо стандартного
+ * биндинга, плейсхолдерами через sprintf.
+ *
+ * @param string $sql               Шаблон SQL-запроса.
+ * @param array|null $placeholders  Массив для подстановки значений по маске в шаблон.
+ * @param int $databaseId           Номер базы данных, к которой нужно подключиться.
+ *
+ * @return array                    Ассоциативный массив с количеством возвращаемых
+ *                                  значений и непосредственно с данным.
+ */
 function selectDb($sql, $placeholders = null, $databaseId = 0)
 {
     global $config;
@@ -112,6 +193,18 @@ function selectDb($sql, $placeholders = null, $databaseId = 0)
     return $result;
 }
 
+/**
+ * Запрос вставки записи в БД
+ *
+ * Всё то же самое, что и в запросе на выборку, только в конце возвращается ID новой
+ * записи.
+ *
+ * @param string $sql               Шаблон SQL-запроса.
+ * @param array|null $placeholders  Массив для подстановки значений по маске в шаблон.
+ * @param int $databaseId           Номер базы данных, к которой нужно подключиться.
+ *
+ * @return int                      Новый ID созданной записи.
+ */
 function insertDb($sql, $placeholders = null, $databaseId = 0)
 {
     global $config;
@@ -134,23 +227,47 @@ function insertDb($sql, $placeholders = null, $databaseId = 0)
     }
 }
 
+/**
+ * Запрос обновления записи
+ *
+ * Обёртка для функции insertDb.
+ *
+ * @param string $sql               Шаблон SQL-запроса.
+ * @param array|null $placeholders  Массив для подстановки значений по маске в шаблон.
+ * @param int $databaseId           Номер базы данных, к которой нужно подключиться.
+ *
+ * @return int                      Новый ID созданной записи.
+ */
 function updateDb($sql, $placeholders = null, $databaseId = 0)
 {
     return insertDb($sql, $placeholders, $databaseId);
 }
 
 /* Cookies */
+
+/**
+ * Установка куки
+ *
+ * Обёртка для установщика кук с целью последующей установки проверок данных,
+ * передаваемых в куки и для создания общих правил хранения (время, домен и т.д.).
+ *
+ * @param string $key               Ключ куки
+ * @param string $value             Значение для ключа
+ */
 function setCookies($key, $value)
 {
     setcookie($key, $value, time() + 3600);
 }
 
-function setAuthorizedCookies($uid, $pass)
-{
-    setCookies('uid', base64_encode($uid));
-    setCookies('token', base64_encode(substr($pass, ($uid % 10))));   
-}
-
+/**
+ * Получение значения куки
+ *
+ * Если ключ есть, получить его в куке.
+ *
+ * @param string $key               Ключ куки
+ *
+ * @return string|null              Значение по ключу
+ */
 function getCookies($key)
 {
     if (isset($_COOKIE[$key])) {
@@ -160,6 +277,30 @@ function getCookies($key)
     }
 }
 
+/**
+ * Установка кук об авторизации
+ *
+ * Простой способ защиты примитивным шифрованием уникального идентификатора
+ * пользователя и криптованная часть хэша его пароля, чья длина варьируется
+ * в зависимости от ID.
+ *
+ * @param string $uid               ID пользователя
+ * @param string $pass              Хэш пароля пользователя
+ */
+function setAuthorizedCookies($uid, $pass)
+{
+    setCookies('uid', base64_encode($uid));
+    setCookies('token', base64_encode(substr($pass, ($uid % 10))));   
+}
+
+/**
+ * Получение информации об авторизованном пользователе
+ *
+ * Дешифровка и проверка валидности данных из куки и получение информации
+ * из базы данных, если пользователь авторизован правильно.
+ *
+ * @return array        Данные о пользователе
+ */
 function getCookieDecrypted()
 {
     $uid = base64_decode(getCookies('uid'));
@@ -176,7 +317,16 @@ function getCookieDecrypted()
 }
 
 
-/* Account management */
+/* Управление учётными записями */
+
+/**
+ * Получение роли авторизованного пользователя
+ *
+ * Если пользователь авторизован, то возвращается его роль: заказчик
+ * или исполнитель.
+ *
+ * @return string|null            Роль пользователя
+ */
 function getRole()
 {
     $row = getCookieDecrypted();
@@ -187,16 +337,91 @@ function getRole()
     return null;
 }
 
+/**
+ * Получение имени пользователя авторизованного пользователя
+ *
+ * Если пользователь авторизован, то возвращается его логин.
+ *
+ * @return string|null            Логин пользователя.
+ */
+function getUsername()
+{
+    $row = getCookieDecrypted();
+    if (isset($row['role'])) {
+        return $row['login'];
+    }
 
+    return null;
+}
+
+/**
+ * Состояние авторизованности пользователя
+ *
+ * Получение информации о состоянии пользователя.
+ *
+ * @return bool            true для авторизованного, false — для неавторизованного.
+ */
+function isAuthorized()
+{
+    $row = getCookieDecrypted();
+    if (isset($row['id'])) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Получение информации о счёте
+ *
+ * Если пользователь авторизован, получается значение на счёте.
+ *
+ * @return float|string       Количество условных единиц на счету.
+ */
+function getAccount()
+{
+    $row = getCookieDecrypted();
+    if (isset($row['account'])) {
+        return $row['account'];
+    }
+
+    return '';
+}
+
+/**
+ * Добавление денег на счёт
+ *
+ * Перевод денег на счёт исполнителя.
+ *
+ * @param int $executorId              ID исполнителя
+ * @param float $sum                   Сумма
+ */
+function addAccount($executorId, $sum)
+{
+    $sql = SQL_ADD_ACCOUNT;
+    $placeholders = array($sum, $executorId);
+    updateDb($sql, $placeholders, SIGNUP_DB);
+}
+
+/**
+ * Процесс регистрации
+ *
+ * Процедура регистрации: проверка уникальности имени пользователя,
+ * добавление информации в БД.
+ *
+ * @todo: Добавить валидацию имени пользователя и пароля, если
+ * необходимо.
+ *
+ * @param array $values             Передаваемые ajax-запросом данные для регистрации.
+ * 
+ * @return array                    Значения для последующей упаковки в json
+ */
 function doSignup($values)
 {
     global $lang;
-    // @todo: Validate input
 
-    // Check, if user is unique
-    $sqlUnique = SQL_SIGNUP_BY_LOGIN;
     $placeholdersUnique = array($values['user']);
-    $resultUnique = selectDb($sqlUnique, $placeholdersUnique, SIGNUP_DB);
+    $resultUnique = selectDb(SQL_SIGNUP_BY_LOGIN, $placeholdersUnique, SIGNUP_DB);
 
     if ($resultUnique['count'] == 0) {
         $sqlInsert = SQL_INSERT_SIGNUP;
@@ -213,6 +438,7 @@ function doSignup($values)
             $result['role'] = $values['role'];
             $result['role_label'] = $lang['groups'][$values['role']];
             $result['account'] = '0.0';
+
             if ($result['role'] == 'client') {
                 $result['menu'] = prepareTemplate('menu-client');
                 $result['content'] = prepareTemplate('frm-order');
@@ -220,6 +446,7 @@ function doSignup($values)
                 $result['menu'] = prepareTemplate('menu-exec');
                 $result['content'] = prepareTemplate('lst-orders');
             }
+
             $result['menu'] = prepareTemplate('menu-exec');
             $result['html'] = $lang['reg_success'];
             $result['status'] = 'ok';
@@ -240,11 +467,19 @@ function doSignup($values)
         $result['html'] = $lang['reg_taken'];
         $result['status'] = 'error';
     }
+
     return $result;
-
-
 }
 
+/**
+ * Процесс авторизации
+ *
+ * Хэширование пароля, проверка наличия записи с таким именем пользователя.
+ *
+ * @param array $values             Передаваемые ajax-запросом данные для авторизации.
+ * 
+ * @return array                    Значения для последующей упаковки в json
+ */
 function doAuthorize($values)
 {
     global $lang;
@@ -285,6 +520,17 @@ function doAuthorize($values)
     return $result;
 }
 
+/**
+ * Процесс выхода из системы
+ *
+ * Процедура выхода из системы, очистка кук, перерисовка меню и отображение сообщения.
+ *
+ * @todo: Сделать обнуление данных на странице.
+ *
+ * @param array $values             Передаваемые ajax-запросом данные для авторизации.
+ * 
+ * @return array                    Значения для последующей упаковки в json
+ */
 function doLogout($values)
 {
     global $lang;
@@ -292,7 +538,6 @@ function doLogout($values)
     setCookies('uid', 0);
     setCookies('token', '');
     unset($_COOKIE);
-    // @todo: Return anonymous values
     $result = array();
 
     $result['username'] = '';
@@ -306,54 +551,40 @@ function doLogout($values)
 
 }
 
+/**
+ * Форма логина
+ *
+ * Сборка шаблона для формы авторизации.
+ *
+ * @return array                    Значения для последующей упаковки в json
+ */
 function frmLogin()
 {
     return array('status' => 'ok', 'html' => prepareTemplate('login'));
 }
 
+/**
+ * Форма регистрации
+ *
+ * Сборка шаблона для формы регистрации.
+ *
+ * @return array                    Значения для последующей упаковки в json
+ */
 function frmSignup()
 {
     return array('status' => 'ok', 'html' => prepareTemplate('signup'));
 }
 
-function getUsername()
-{
-    $row = getCookieDecrypted();
-    if (isset($row['role'])) {
-        return $row['login'];
-    }
 
-    return null;
-}
+/* Управление заказами */
 
-function isAuthorized()
-{
-    $row = getCookieDecrypted();
-    if (isset($row['id'])) {
-        return true;
-    }
-
-    return false;
-}
-
-function getAccount()
-{
-    $row = getCookieDecrypted();
-    if (isset($row['account'])) {
-        return $row['account'];
-    }
-
-    return '';
-}
-
-function addAccount($executorId, $sum)
-{
-    $sql = SQL_ADD_ACCOUNT;
-    $placeholders = array($sum, $executorId);
-    updateDb($sql, $placeholders, SIGNUP_DB);
-}
-
-/* Order management */
+/**
+ * Форма добавления заказа
+ *
+ * Сборка шаблона для формы заказа.
+ *
+ * @return array                    Значения для последующей упаковки в json
+ */
 function frmOrder()
 {
     if (isAuthorized() && getRole() == 'client') {
@@ -364,6 +595,15 @@ function frmOrder()
     }
 }
 
+/**
+ * Процесс сохранения запроса
+ *
+ * Сохранение данных о запросе и пользователе, вывод сообщения.
+ *
+ * @param array $values             Передаваемые ajax-запросом данные для авторизации.
+ * 
+ * @return array                    Значения для последующей упаковки в json
+ */
 function saveOrder($values)
 {
     global $lang;
@@ -387,10 +627,21 @@ function saveOrder($values)
     }
 }
 
+/**
+ * Отображение списка заказов
+ *
+ * Формирование списка заказов для последующего отображения их в таблице.
+ *
+ * @todo: Постраничный вывод.
+ *
+ * @param array $values             Передаваемые ajax-запросом данные для авторизации.
+ * 
+ * @return array                    Значения для последующей упаковки в json
+ */
 function listOrders($values)
 {
     global $lang;
-    // @todo: Pagination
+    // 
     if (isAuthorized() && getRole() == 'executor') {
         $sql = SQL_LIST_ORDERS;
         $rows = selectDb($sql, null, ORDER_DB);
@@ -408,6 +659,17 @@ function listOrders($values)
     }
 }
 
+/**
+ * Выполнение заказа
+ *
+ * Процедура выполнения заказа, перечисления денег на счёт исполнителя.
+ *
+ * @todo: Вывести сообщение о том, что заказ уже кем-то выполнен.
+ *
+ * @param array $values             Передаваемые ajax-запросом данные для авторизации.
+ * 
+ * @return array                    Значения для последующей упаковки в json
+ */
 function seizeOrder($values)
 {
     if (isAuthorized() && getRole() == 'executor') {
@@ -416,7 +678,6 @@ function seizeOrder($values)
         $row = getCookieDecrypted();
 
         if ($order['status'] == 1 && $order['exec_id'] == 0) {
-            // @todo: Check order status: if 0 and no executor, change its status
             $placeholders = array($row['id'], intval($order_id));
             updateDb(SQL_SEIZE_ORDER, $placeholders, ORDER_DB);
 
@@ -430,14 +691,17 @@ function seizeOrder($values)
             $result['account'] = $row['account'];
             $result['status'] = 'ok';
             return $result;
-        
-        } else {
-            // This order was already taken
         }
     }
 }
 
-
+/**
+ * Получение полной информации о заказе
+ *
+ * @param int $id             ID заказа
+ * 
+ * @return null|array         Реквизиты заказа
+ */
 function getOrderInfo($id)
 {
     $sql = SQL_ORDER_INFO;
@@ -450,6 +714,16 @@ function getOrderInfo($id)
     }
 }
 
+/**
+ * Расчёт комиссии
+ *
+ * Вычисление комиссии, исходя из значения процента, указанного
+ * в конфигурационном файле.
+ *
+ * @param float $price   Стоимость
+ * 
+ * @return float         Комиссия
+ */
 function countComission($price)
 {
     global $config;
@@ -457,6 +731,16 @@ function countComission($price)
     return $price * ($config['comission'] / 100);
 }
 
+/**
+ * Сохранение комиссии в базе данных
+ *
+ * Сохранение комиссии, которая была вычтена из расчёта с исполнителем,
+ * в базе данных. Этого не было в задании, но это должно быть важно.
+ *
+ * @param float $amount     Размер комиссии для сохранения.
+ * @param int $order_id     Идентификатор заказа.
+ * @param int $user_id      Идентификатор исполнителя.
+ */
 function saveComission($amount, $order_id, $user_id)
 {
     $sql = SQL_INSERT_COMISSION;
